@@ -1,11 +1,15 @@
 package com.brayandichtl.sunshine;
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -26,55 +30,31 @@ public class ForecastFragment extends Fragment {
     public ForecastFragment() {
     }
 
-    private class FetchWeatherTask extends AsyncTask<String, Void, Void> {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-        private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
+        setHasOptionsMenu(true);
+    }
 
-        @Override
-        protected Void doInBackground(String... strings) {
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
 
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
+        inflater.inflate(R.menu.forecastfragment, menu);
+    }
 
-            String forecastJsonStr = null;
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Integer id = item.getItemId();
+        if(id == R.id.action_refresh) {
+            Log.d("ID DO ITEM TOCADO", id.toString());
 
-            try{
-                URL forecastEndPoint = new URL( strings[0] );
-
-                urlConnection = (HttpURLConnection) forecastEndPoint.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
-
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-
-                while ( (line = reader.readLine() ) != null){
-                    buffer.append(line+"\n");
-                }
-
-                forecastJsonStr = buffer.toString();
-
-            }catch(IOException exception){
-                Log.e(LOG_TAG, "Error", exception);
-            }finally {
-
-                if(urlConnection != null){
-                    urlConnection.disconnect();
-                }
-                if(reader != null){
-                    try{
-                        reader.close();
-                    }catch (final IOException exc){
-                        Log.e("ForecastFragment", "Error closing stream", exc);
-                    }
-                }
-            }
+            FetchWeatherTask weatherTask = new FetchWeatherTask();
+            weatherTask.execute("Brasilia,Br");
         }
 
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -109,11 +89,85 @@ public class ForecastFragment extends Fragment {
         ListView forecastList = (ListView) rootView.findViewById(R.id.listview_forecast);
         forecastList.setAdapter(forecastAdapter);
 
-//        String url = "http://api.openweathermap.org/data/2.5/forecast/daily?q=Brasilia,Br&mode=json&units=metric&cnt=7";
-//        FetchWeatherTask endPointTask = new FetchWeatherTask();
-//        endPointTask.doInBackground(url);
-
         return rootView;
 
     }
+
+    private class FetchWeatherTask extends AsyncTask<String, Void, Void> {
+
+        private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
+
+        @Override
+        protected Void doInBackground(String... params) {
+
+            if(params.length == 0){
+                Log.e(LOG_TAG, "You must pass a localization");
+                return null;
+            }
+
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String forecastJsonStr = null;
+
+            String format = "json";
+            String units = "metric";
+            int numDays = 7;
+
+            try{
+                final String FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast/daily?";
+                final String QUERY_PARAM = "q";
+                final String FORMART_PARAM = "mode";
+                final String UNIT_PARAM = "units";
+                final String DAYS_PARAM = "cnt";
+
+                Uri builtUri = Uri.parse(FORECAST_URL).buildUpon().
+                        appendQueryParameter(QUERY_PARAM, params[0]).
+                        appendQueryParameter(FORMART_PARAM, format).
+                        appendQueryParameter(UNIT_PARAM, units).
+                        appendQueryParameter(DAYS_PARAM, Integer.toString(numDays)).
+                        build();
+
+
+                URL forecastEndPoint = new URL(builtUri.toString());
+                Log.v(LOG_TAG, "Builded URL: "+builtUri.toString());
+
+                urlConnection = (HttpURLConnection) forecastEndPoint.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.connect();
+
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuffer buffer = new StringBuffer();
+
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+
+                while ( (line = reader.readLine() ) != null){
+                    buffer.append(line+"\n");
+                }
+
+                forecastJsonStr = buffer.toString();
+
+                Log.v(LOG_TAG, forecastJsonStr);
+
+            }catch(IOException exception){
+                Log.e(LOG_TAG, "Error", exception);
+            }finally {
+
+                if(urlConnection != null){
+                    urlConnection.disconnect();
+                }
+                if(reader != null){
+                    try{
+                        reader.close();
+                    }catch (final IOException exc){
+                        Log.e("ForecastFragment", "Error closing stream", exc);
+                    }
+                }
+            }
+            return null;
+        }
+
+    }
+
 }
