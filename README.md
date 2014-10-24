@@ -1,4 +1,4 @@
 Sunshine_app
 ============
 
-App para estudo de Android, bem básico com tutorial em: https://www.udacity.com/
+Versão 2 do App para estudo de Android, tutorial em: https://www.udacity.com/google
