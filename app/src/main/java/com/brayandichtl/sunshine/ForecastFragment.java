@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by brayandichtl on 10/23/14.
@@ -93,12 +95,23 @@ public class ForecastFragment extends Fragment {
 
     }
 
-    private class FetchWeatherTask extends AsyncTask<String, Void, Void> {
+    private class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 
+
+        /* The date/time conversion code is going to be moved outside the asynctask later,
+         * so for convenience we're breaking it out into its own method now.
+         */
+        private String getReadableDateString(long time){
+            Date date = new Date(time * 1000);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("E, MMM d");
+            return dateFormat.format(date).toString();
+        }
+
+
         @Override
-        protected Void doInBackground(String... params) {
+        protected String[] doInBackground(String... params) {
 
             if(params.length == 0){
                 Log.e(LOG_TAG, "You must pass a localization");
