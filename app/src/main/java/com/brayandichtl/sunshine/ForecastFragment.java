@@ -12,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -33,6 +34,8 @@ import java.util.Date;
  */
 public class ForecastFragment extends Fragment {
 
+    private ArrayAdapter<String> forecastAdapter;
+
     public ForecastFragment() {
     }
 
@@ -53,7 +56,7 @@ public class ForecastFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         Integer id = item.getItemId();
-        if(id == R.id.action_refresh) {
+        if (id == R.id.action_refresh) {
             Log.d("ID DO ITEM TOCADO", id.toString());
 
             FetchWeatherTask weatherTask = new FetchWeatherTask();
@@ -70,27 +73,22 @@ public class ForecastFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
 
-        String[] forecasts = {
-                "Today — Sunny — 88/63",
-                "Tomorrow — Foggy — 70/46",
-                "Weds — Cloudy — 72/63",
-                "Thurs — Rainy — 64/51",
-                "Fri — Foggy — 70/46",
-                "Sat — Sunny — 88/63",
-                "Sun — Cloudy — 72/62"
-        };
+        forecastAdapter = new ArrayAdapter<String>(
+            //current context (fragment's parent)
+            getActivity(),
+            //ID of list item layout
+            R.layout.list_item_forecast,
+            //ID of the textView to populate
+            R.id.list_item_forecast_textview
 
-
-        ArrayAdapter<String> forecastAdapter = new ArrayAdapter<String>(
-                //current context (fragment's parent)
-                getActivity(),
-                //ID of list item layout
-                R.layout.list_item_forecast,
-                //ID of the textView to populate
-                R.id.list_item_forecast_textview,
-                //Forecast data
-                forecasts
         );
+
+//        for(String item : forecasts){
+//            forecastAdapter.add(item);
+//        }
+
+        FetchWeatherTask fetchWeather = new FetchWeatherTask();
+        fetchWeather.execute("Brasilia,Br");
 
         ListView forecastList = (ListView) rootView.findViewById(R.id.listview_forecast);
         forecastList.setAdapter(forecastAdapter);
@@ -108,7 +106,7 @@ public class ForecastFragment extends Fragment {
          * The date/time conversion code is going to be moved outside the asynctask later,
          * so for convenience we're breaking it out into its own method now.
          */
-        private String getReadableDateString(long time){
+        private String getReadableDateString(long time) {
             Date date = new Date(time * 1000);
             SimpleDateFormat dateFormat = new SimpleDateFormat("E, MMM d");
             return dateFormat.format(date).toString();
@@ -117,20 +115,19 @@ public class ForecastFragment extends Fragment {
         /**
          * Prepare the weather high/lows for presentation.
          */
-        private String formatHighLows(double high, double low){
+        private String formatHighLows(double high, double low) {
             long roundedHigh = Math.round(high);
             long roundedLow = Math.round(low);
 
-            String highLowStr = roundedHigh+"/"+roundedLow;
+            String highLowStr = roundedHigh + "/" + roundedLow;
             return highLowStr;
         }
 
         /**
-         *
          * Take the string containing the forecast JSON and pull out the data
          */
         private String[] getWeatherDataFromJson(String forecastJsonStr, int numDays)
-                throws JSONException{
+                throws JSONException {
             final String OWM_LIST = "list";
             final String OWM_WEATHER = "weather";
             final String OWM_TEMPERATURE = "temp";
@@ -144,7 +141,7 @@ public class ForecastFragment extends Fragment {
             JSONArray weatherArray = forecastJson.getJSONArray(OWM_LIST);
 
             String[] resultsStr = new String[numDays];
-            for(int i = 0; i < weatherArray.length(); i++){
+            for (int i = 0; i < weatherArray.length(); i++) {
                 String day;
                 String description;
                 String highAndLow;
@@ -153,11 +150,11 @@ public class ForecastFragment extends Fragment {
                 JSONObject dayForeCastJson = weatherArray.getJSONObject(i);
 
                 //converting datetime
-                long datetime =  dayForeCastJson.getLong(OWM_DATETIME);
+                long datetime = dayForeCastJson.getLong(OWM_DATETIME);
                 day = getReadableDateString(datetime);
 
                 //getting description @todo: testar utilizando  "weather" corrente da list "dayForeCastJson.getJSONObject(OWM_WEATHER);
-                JSONObject weather = forecastJson.getJSONArray(OWM_WEATHER).getJSONObject(0);
+                JSONObject weather = dayForeCastJson.getJSONArray(OWM_WEATHER).getJSONObject(0);
                 description = weather.getString(OWM_DESCRIPTION);
 
                 //temperatures
@@ -173,11 +170,21 @@ public class ForecastFragment extends Fragment {
         }
 
 
+        @Override
+        protected void onPostExecute(String[] result) {
+            super.onPostExecute(result);
+            if(result != null){
+                forecastAdapter.clear();
+                for(String info: result){
+                    forecastAdapter.add(info);
+                }
+            }
+        }
 
         @Override
         protected String[] doInBackground(String... params) {
 
-            if(params.length == 0){
+            if (params.length == 0) {
                 Log.e(LOG_TAG, "You must pass a localization");
                 return null;
             }
@@ -186,27 +193,29 @@ public class ForecastFragment extends Fragment {
             BufferedReader reader = null;
             String forecastJsonStr = null;
 
+
             String format = "json";
             String units = "metric";
             int numDays = 7;
 
-            try{
+            try {
                 final String FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast/daily?";
                 final String QUERY_PARAM = "q";
                 final String FORMART_PARAM = "mode";
                 final String UNIT_PARAM = "units";
                 final String DAYS_PARAM = "cnt";
+                final String LANGUAGE = "lang";
 
                 Uri builtUri = Uri.parse(FORECAST_URL).buildUpon().
                         appendQueryParameter(QUERY_PARAM, params[0]).
                         appendQueryParameter(FORMART_PARAM, format).
                         appendQueryParameter(UNIT_PARAM, units).
                         appendQueryParameter(DAYS_PARAM, Integer.toString(numDays)).
+                        appendQueryParameter(LANGUAGE, "pt").
                         build();
 
 
                 URL forecastEndPoint = new URL(builtUri.toString());
-                Log.v(LOG_TAG, "Builded URL: "+builtUri.toString());
 
                 urlConnection = (HttpURLConnection) forecastEndPoint.openConnection();
                 urlConnection.setRequestMethod("GET");
@@ -219,29 +228,35 @@ public class ForecastFragment extends Fragment {
 
                 String line;
 
-                while ( (line = reader.readLine() ) != null){
-                    buffer.append(line+"\n");
+                while ((line = reader.readLine()) != null) {
+                    buffer.append(line + "\n");
                 }
 
                 forecastJsonStr = buffer.toString();
 
-                Log.v(LOG_TAG, forecastJsonStr);
+                try {
+                    return getWeatherDataFromJson(forecastJsonStr, numDays);
+                } catch (JSONException exception) {
+                    Log.e(LOG_TAG, exception.toString());
+                }
 
-            }catch(IOException exception){
+
+            } catch (IOException exception) {
                 Log.e(LOG_TAG, "Error", exception);
-            }finally {
+            } finally {
 
-                if(urlConnection != null){
+                if (urlConnection != null) {
                     urlConnection.disconnect();
                 }
-                if(reader != null){
-                    try{
+                if (reader != null) {
+                    try {
                         reader.close();
-                    }catch (final IOException exc){
+                    } catch (final IOException exc) {
                         Log.e("ForecastFragment", "Error closing stream", exc);
                     }
                 }
             }
+
             return null;
         }
 
