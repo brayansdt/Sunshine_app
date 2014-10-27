@@ -15,6 +15,10 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -100,7 +104,8 @@ public class ForecastFragment extends Fragment {
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 
 
-        /* The date/time conversion code is going to be moved outside the asynctask later,
+        /**
+         * The date/time conversion code is going to be moved outside the asynctask later,
          * so for convenience we're breaking it out into its own method now.
          */
         private String getReadableDateString(long time){
@@ -108,6 +113,65 @@ public class ForecastFragment extends Fragment {
             SimpleDateFormat dateFormat = new SimpleDateFormat("E, MMM d");
             return dateFormat.format(date).toString();
         }
+
+        /**
+         * Prepare the weather high/lows for presentation.
+         */
+        private String formatHighLows(double high, double low){
+            long roundedHigh = Math.round(high);
+            long roundedLow = Math.round(low);
+
+            String highLowStr = roundedHigh+"/"+roundedLow;
+            return highLowStr;
+        }
+
+        /**
+         *
+         * Take the string containing the forecast JSON and pull out the data
+         */
+        private String[] getWeatherDataFromJson(String forecastJsonStr, int numDays)
+                throws JSONException{
+            final String OWM_LIST = "list";
+            final String OWM_WEATHER = "weather";
+            final String OWM_TEMPERATURE = "temp";
+            final String OWM_MAX = "max";
+            final String OWM_MIN = "min";
+            final String OWM_DATETIME = "dt";
+            final String OWM_DESCRIPTION = "main";
+
+            //extraindo lista de dias do json
+            JSONObject forecastJson = new JSONObject(forecastJsonStr);
+            JSONArray weatherArray = forecastJson.getJSONArray(OWM_LIST);
+
+            String[] resultsStr = new String[numDays];
+            for(int i = 0; i < weatherArray.length(); i++){
+                String day;
+                String description;
+                String highAndLow;
+
+                //get JSON's day
+                JSONObject dayForeCastJson = weatherArray.getJSONObject(i);
+
+                //converting datetime
+                long datetime =  dayForeCastJson.getLong(OWM_DATETIME);
+                day = getReadableDateString(datetime);
+
+                //getting description @todo: testar utilizando  "weather" corrente da list "dayForeCastJson.getJSONObject(OWM_WEATHER);
+                JSONObject weather = forecastJson.getJSONArray(OWM_WEATHER).getJSONObject(0);
+                description = weather.getString(OWM_DESCRIPTION);
+
+                //temperatures
+                JSONObject temperature = dayForeCastJson.getJSONObject(OWM_TEMPERATURE);
+                double high = temperature.getDouble(OWM_MAX);
+                double low = temperature.getDouble(OWM_MIN);
+
+                highAndLow = formatHighLows(high, low);
+                resultsStr[i] = day + " - " + description + " - " + highAndLow;
+            }
+
+            return resultsStr;
+        }
+
 
 
         @Override
