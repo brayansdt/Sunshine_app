@@ -1,5 +1,6 @@
 package com.brayandichtl.sunshine;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
@@ -15,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -80,27 +82,31 @@ public class ForecastFragment extends Fragment {
             R.layout.list_item_forecast,
             //ID of the textView to populate
             R.id.list_item_forecast_textview
-
         );
-
-//        for(String item : forecasts){
-//            forecastAdapter.add(item);
-//        }
 
         FetchWeatherTask fetchWeather = new FetchWeatherTask();
         fetchWeather.execute("Brasilia,Br");
 
-        ListView forecastList = (ListView) rootView.findViewById(R.id.listview_forecast);
-        forecastList.setAdapter(forecastAdapter);
+        ListView forecastListView = (ListView) rootView.findViewById(R.id.listview_forecast);
+        forecastListView.setAdapter(forecastAdapter);
+
+        forecastListView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Context context = getActivity();
+                CharSequence fooText = forecastAdapter.getItem(i);
+
+                Toast fooToast = Toast.makeText(context, fooText, Toast.LENGTH_SHORT);
+                fooToast.show();
+            }
+        });
 
         return rootView;
-
     }
 
     private class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
-
 
         /**
          * The date/time conversion code is going to be moved outside the asynctask later,
