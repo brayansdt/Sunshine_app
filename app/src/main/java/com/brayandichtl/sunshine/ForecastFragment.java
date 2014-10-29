@@ -94,14 +94,24 @@ public class ForecastFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 
-                CharSequence fooText = forecastAdapter.getItem(i);
+                CharSequence description = forecastAdapter.getItem(i);
                 Intent detailIntent = new Intent(getActivity(), DetailActivity.class);
 
-                detailIntent.putExtra("forecastDetail", fooText);
+                detailIntent.putExtra("forecastDetail", description);
 
                 startActivity(detailIntent);
             }
         });
+
+        forecastListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener(){
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Toast itemDescriptionToast = Toast.makeText(getActivity(), forecastAdapter.getItem(i), Toast.LENGTH_SHORT);
+                itemDescriptionToast.show();
+                return false;
+            }
+        });
+
 
         return rootView;
     }
