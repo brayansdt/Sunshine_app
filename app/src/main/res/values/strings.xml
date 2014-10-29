@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Sunshine</string>
-    <string name="app_detail_name">Forecast Detailed Item</string>
+    <string name="app_name">Clima Tempo</string>
+    <string name="app_detail_name">Item Detalhado</string>
     <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
-    <string name="action_refresh">Refresh</string>
-    <string name="title_activity_detail">DetailActivity</string>
+    <string name="action_settings">Configurações</string>
+    <string name="action_refresh">Atualizar</string>
+    <string name="title_activity_detail">Detalhes</string>
 
 </resources>
